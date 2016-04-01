@@ -130,7 +130,7 @@ class Landsat8(object):
 
         folders = []
 
-        logger.info('Source: AWS S3', normal=True, arrow=True)
+        logger.info('Source: AWS S3')
         for scene in scenes:
             sat = landsat_scene_interpreter(scene)
 
