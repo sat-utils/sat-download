@@ -4,8 +4,8 @@ from xml.etree import ElementTree
 
 from usgs import api, USGSError
 
-from .common import (check_create_folder, fetch, landsat_scene_interpreter, google_storage_url,
-                     remote_file_exists, amazon_s3_url)
+from .common import (check_create_folder, fetch, landsat_scene_interpreter, google_storage_url_landsat8,
+                     remote_file_exists, amazon_s3_url_landsat8)
 from .errors import RemoteFileDoesntExist, USGSInventoryAccessMissing
 
 logger = logging.getLogger('sdownloader')
@@ -114,7 +114,7 @@ class Landsat8(object):
         for scene in scenes:
 
             sat = landsat_scene_interpreter(scene)
-            url = google_storage_url(sat)
+            url = google_storage_url_landsat8(sat)
             remote_file_exists(url)
 
             files.append(fetch(url, self.download_dir))
@@ -145,7 +145,7 @@ class Landsat8(object):
 
             for band in bands:
                 # get url for the band
-                url = amazon_s3_url(sat, band)
+                url = amazon_s3_url_landsat8(sat, band)
 
                 # make sure it exist
                 remote_file_exists(url)
