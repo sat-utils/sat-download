@@ -1,0 +1,3 @@
+requests==2.9.1
+homura==0.1.3
+usgs==0.1.9
