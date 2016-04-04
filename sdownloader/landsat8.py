@@ -14,7 +14,7 @@ logger = logging.getLogger('sdownloader')
 class Landsat8(object):
     """ Landsat8 downloader class """
 
-    def __init__(self, download_dir=None, usgs_user=None, usgs_pass=None):
+    def __init__(self, download_dir, usgs_user=None, usgs_pass=None):
         self.download_dir = download_dir
         self.usgs_user = usgs_user
         self.usgs_pass = usgs_pass
