@@ -8,6 +8,11 @@ class IncorrectLandsat8SceneId(Exception):
     pass
 
 
+class IncorrectSentine2SceneId(Exception):
+    """ Exception to be used when Sentinel 2 scene id is incorrect """
+    pass
+
+
 class USGSInventoryAccessMissing(Exception):
     """ Exception for when User does not have access to USGS Inventory Service """
     pass
