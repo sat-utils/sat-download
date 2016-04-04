@@ -48,13 +48,13 @@ class Landsat8(object):
                     # if bands are not provided, directly go to Goodle and then USGS
                     if not isinstance(bands, list):
                         raise RemoteFileDoesntExist
-                    files.append(self.s3([scene], bands))
+                    files.extend(self.s3([scene], bands))
 
                 except RemoteFileDoesntExist:
                     try:
-                        files.append(self.google([scene]))
+                        files.extend(self.google([scene]))
                     except RemoteFileDoesntExist:
-                        files.append(self.usgs([scene]))
+                        files.extend(self.usgs([scene]))
 
             return files
 
