@@ -56,23 +56,30 @@ class Tests(unittest.TestCase):
         expect = 'L8/136/008/LT81360082013127LGN01.tar.bz'
         assert expect in string
 
-    def test_amazon_s3_url(self):
+    def test_amazon_s3_url_landsat8(self):
         sat = common.landsat_scene_interpreter(self.scene)
         string = common.amazon_s3_url_landsat8(sat, 11)
         expect = 'L8/136/008/LT81360082013127LGN01/LT81360082013127LGN01_B11.TIF'
         assert expect in string
 
+    def test_amazon_s3_url_sentinel2(self):
+        scene = 'S2A_OPER_MSI_L1C_TL_SGS__20160325T150955_A003951_T34RCS_N02.01'
+        path = common.sentinel_scene_interpreter(scene)
+        string = common.amazon_s3_url_sentinel2(path, 11)
+        expect = 'tiles/34/R/CS/2016/3/25/0/B11.jp2'
+        assert expect in string
+
     def test_remote_file_exist(self):
         # Exists and should return None
 
-        assert common.remote_file_exists(os.path.join(common.S3, 'L8/003/017/LC80030172015001L'
+        assert common.remote_file_exists(os.path.join(common.S3_LANDSAT, 'L8/003/017/LC80030172015001L'
                                                       'GN00/LC80030172015001LGN00_B6.TIF'))
 
         # Doesn't exist and should raise errror
         with self.assertRaises(errors.RemoteFileDoesntExist):
             common.remote_file_exists(
                 os.path.join(
-                    common.S3,
+                    common.S3_LANDSAT,
                     'L8/003/017/LC80030172015001LGN00/LC80030172015001LGN00_B34.TIF'
                 )
             )
@@ -89,7 +96,7 @@ class Tests(unittest.TestCase):
         # Exist and shouldn't raise error
         assert common.remote_file_exists(os.path.join(common.GOOGLE, 'L8/003/017/LC80030172015001LGN00.tar.bz'))
 
-    def test_scene_interpreter(self):
+    def test_landsat_scene_interpreter(self):
         # Test with correct input
         scene = 'LC80030172015001LGN00'
         ouput = common.landsat_scene_interpreter(scene)
@@ -97,6 +104,21 @@ class Tests(unittest.TestCase):
 
         # Test with incorrect input
         self.assertRaises(Exception, common.landsat_scene_interpreter, 'LC80030172015001LGN')
+
+    def test_sentinel_scene_interpreter_success(self):
+        scene = 'S2A_OPER_MSI_L1C_TL_SGS__20160325T150955_A003951_T34RCS_N02.01'
+        output = common.sentinel_scene_interpreter(scene)
+        expect = 'tiles/34/R/CS/2016/3/25/0'
+        self.assertEqual(output, expect)
+
+        scene = 'tiles/34/R/CS/2016/3/25/0'
+        output = common.sentinel_scene_interpreter(scene)
+        self.assertEqual(output, expect)
+
+    def test_sentinel_scene_interpreter_fail(self):
+        with self.assertRaises(errors.IncorrectSentine2SceneId):
+            scene = 'S2A_OPER_MSI_L1C_TL_SGS__20160325T150955_A003951_T34RCS_N02.what'
+            common.sentinel_scene_interpreter(scene)
 
 if __name__ == '__main__':
     unittest.main()
