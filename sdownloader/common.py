@@ -1,16 +1,53 @@
 import re
 import logging
+import datetime
 from os import makedirs
 from os.path import join, exists, getsize
 
 import requests
+from wordpad import pad
 from homura import download
 
-from .errors import IncorrectLandsat8SceneId, RemoteFileDoesntExist
+from .errors import IncorrectLandsat8SceneId, RemoteFileDoesntExist, IncorrectSentine2SceneId
 
 logger = logging.getLogger('sdownloader')
-S3 = 'http://landsat-pds.s3.amazonaws.com/'
+S3_LANDSAT = 'http://landsat-pds.s3.amazonaws.com/'
+S3_SENTINEL = 'http://sentinel-s2-l1c.s3.amazonaws.com/'
 GOOGLE = 'http://storage.googleapis.com/earthengine-public/landsat/'
+
+
+def sentinel_scene_interpreter(scene_name):
+    """ This function converts a tile/scene name
+    (e.g. S2A_OPER_MSI_L1C_TL_SGS__20160325T150955_A003951_T34RCS_N02.01) to a
+    AWS S3 path
+    """
+    assert isinstance(scene_name, str)
+
+    try:
+        if '/' in scene_name or 'tiles' in scene_name:
+            return scene_name
+
+        splitted = scene_name.split('_')
+        version = int(splitted[-1].split('.')[-1]) - 1
+        date = datetime.datetime.strptime(splitted[-4], '%Y%m%dT%H%M%S')
+
+        mgrs = splitted[-2]
+        utm = int(mgrs[1:3])
+        latitude_band = mgrs[3]
+        grid_square = mgrs[4:6]
+
+        return 'tiles/{0}/{1}/{2}/{3}/{4}/{5}/{6}'.format(
+            utm,
+            latitude_band,
+            grid_square,
+            date.year,
+            date.month,
+            date.day,
+            version
+        )
+
+    except (ValueError):
+        raise IncorrectSentine2SceneId('Incorrect Scene for Sentinel-2 provided')
 
 
 def landsat_scene_interpreter(scene_name):
@@ -127,7 +164,31 @@ def amazon_s3_url_landsat8(sat, band):
         else:
             raise IncorrectLandsat8SceneId('Band number provided is not correct!')
 
-        return url_builder([S3, sat['sat'], sat['path'], sat['row'], sat['scene'], filename])
+        return url_builder([S3_LANDSAT, sat['sat'], sat['path'], sat['row'], sat['scene'], filename])
+
+
+def amazon_s3_url_sentinel2(path, band, suffix='B', frmt='jp2'):
+        """
+        Return an amazon s3 url for a sentinel2 scene band
+        :param sat:
+            Expects an object created by landsat_scene_interpreter function
+        :type sat:
+            dict
+        :param filename:
+            The filename that has to be downloaded from Amazon
+        :type filename:
+            String
+        :returns:
+            (String) The URL to a S3 file
+        """
+
+        return '{0}{1}/{2}{3}.{4}'.format(
+            S3_SENTINEL,
+            path,
+            suffix,
+            pad(band, 2),
+            frmt
+        )
 
 
 def google_storage_url_landsat8(sat):
