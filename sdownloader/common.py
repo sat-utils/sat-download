@@ -140,7 +140,6 @@ def google_storage_url_landsat8(sat):
     :returns:
         (String) The URL to a google storage file
     """
-    print(sat)
     filename = sat['scene'] + '.tar.bz'
     return url_builder([GOOGLE, sat['sat'], sat['path'], sat['row'], filename])
 
