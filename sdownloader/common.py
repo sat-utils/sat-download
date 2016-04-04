@@ -129,7 +129,7 @@ def amazon_s3_url_landsat8(sat, band):
         return url_builder([s3, sat['sat'], sat['path'], sat['row'], sat['scene'], filename])
 
 
-def google_storage_url_landsat8(self, sat):
+def google_storage_url_landsat8(sat):
     """
     Returns a google storage url for a landsat8 scene.
     :param sat:
@@ -139,12 +139,13 @@ def google_storage_url_landsat8(self, sat):
     :returns:
         (String) The URL to a google storage file
     """
+    print(sat)
     filename = sat['scene'] + '.tar.bz'
     google = 'http://storage.googleapis.com/earthengine-public/landsat/'
     return url_builder([google, sat['sat'], sat['path'], sat['row'], filename])
 
 
-def fetch(self, url, path):
+def fetch(url, path):
     """ Downloads a given url to a give path.
     :param url:
         The url to be downloaded.
@@ -170,7 +171,7 @@ def fetch(self, url, path):
 
     if exists(join(path, filename)):
         size = getsize(join(path, filename))
-        if size == self.get_remote_file_size(url):
+        if size == get_remote_file_size(url):
             logger.info('{0} already exists on your system'.format(filename))
 
     else:
