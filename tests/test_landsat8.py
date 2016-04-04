@@ -75,7 +75,7 @@ class Tests(unittest.TestCase):
     def test_download_google_when_amazon_is_unavailable(self, fake_google):
         """ Test whether google or amazon are correctly selected based on input """
 
-        fake_google.return_value = False
+        fake_google.return_value = []
 
         # Test if google is used when an image from 2014 is passed even if bands are provided
         scenes = [self.all_scenes[-1]]
