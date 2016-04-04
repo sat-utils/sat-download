@@ -9,6 +9,8 @@ from homura import download
 from .errors import IncorrectLandsat8SceneId, RemoteFileDoesntExist
 
 logger = logging.getLogger('sdownloader')
+S3 = 'http://landsat-pds.s3.amazonaws.com/'
+GOOGLE = 'http://storage.googleapis.com/earthengine-public/landsat/'
 
 
 def landsat_scene_interpreter(scene_name):
@@ -117,7 +119,6 @@ def amazon_s3_url_landsat8(sat, band):
         :returns:
             (String) The URL to a S3 file
         """
-        s3 = 'http://landsat-pds.s3.amazonaws.com/'
 
         if band != 'MTL':
             filename = '%s_B%s.TIF' % (sat['scene'], band)
@@ -126,7 +127,7 @@ def amazon_s3_url_landsat8(sat, band):
         else:
             raise IncorrectLandsat8SceneId('Band number provided is not correct!')
 
-        return url_builder([s3, sat['sat'], sat['path'], sat['row'], sat['scene'], filename])
+        return url_builder([S3, sat['sat'], sat['path'], sat['row'], sat['scene'], filename])
 
 
 def google_storage_url_landsat8(sat):
@@ -141,8 +142,7 @@ def google_storage_url_landsat8(sat):
     """
     print(sat)
     filename = sat['scene'] + '.tar.bz'
-    google = 'http://storage.googleapis.com/earthengine-public/landsat/'
-    return url_builder([google, sat['sat'], sat['path'], sat['row'], filename])
+    return url_builder([GOOGLE, sat['sat'], sat['path'], sat['row'], filename])
 
 
 def fetch(url, path):
