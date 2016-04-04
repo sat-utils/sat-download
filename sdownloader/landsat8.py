@@ -52,9 +52,9 @@ class Landsat8(object):
 
                 except RemoteFileDoesntExist:
                     try:
-                        files.append(self.google([scene], self.download_dir))
+                        files.append(self.google([scene]))
                     except RemoteFileDoesntExist:
-                        files.append(self.usgs([scene], self.download_dir))
+                        files.append(self.usgs([scene]))
 
             return files
 
