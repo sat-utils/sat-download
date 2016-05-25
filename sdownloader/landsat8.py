@@ -1,23 +1,26 @@
 import logging
-from os.path import join
 from xml.etree import ElementTree
 
 from usgs import api, USGSError
 
-from .common import (check_create_folder, fetch, landsat_scene_interpreter, google_storage_url_landsat8,
-                     remote_file_exists, amazon_s3_url_landsat8)
+from .download import S3DownloadMixin, Scenes
+from .common import (landsat_scene_interpreter, amazon_s3_url_landsat8, check_create_folder,
+                     fetch, google_storage_url_landsat8, remote_file_exists)
+
 from .errors import RemoteFileDoesntExist, USGSInventoryAccessMissing
 
 logger = logging.getLogger('sdownloader')
 
 
-class Landsat8(object):
+class Landsat8(S3DownloadMixin):
     """ Landsat8 downloader class """
 
     def __init__(self, download_dir, usgs_user=None, usgs_pass=None):
         self.download_dir = download_dir
         self.usgs_user = usgs_user
         self.usgs_pass = usgs_pass
+        self.scene_interpreter = landsat_scene_interpreter
+        self.amazon_s3_url = amazon_s3_url_landsat8
 
         # Make sure download directory exist
         check_create_folder(self.download_dir)
@@ -38,7 +41,7 @@ class Landsat8(object):
         """
 
         if isinstance(scenes, list):
-            files = []
+            scene_objs = Scenes()
 
             for scene in scenes:
 
@@ -48,15 +51,22 @@ class Landsat8(object):
                     # if bands are not provided, directly go to Goodle and then USGS
                     if not isinstance(bands, list):
                         raise RemoteFileDoesntExist
-                    files.extend(self.s3([scene], bands))
+                    # Always grab MTL.txt and QA band if bands are specified
+                    if 'BQA' not in bands:
+                        bands.append('QA')
+
+                    if 'MTL' not in bands:
+                        bands.append('MTL')
+
+                    scene_objs.merge(self.s3([scene], bands))
 
                 except RemoteFileDoesntExist:
                     try:
-                        files.extend(self.google([scene]))
+                        scene_objs.merge(self.google([scene]))
                     except RemoteFileDoesntExist:
-                        files.extend(self.usgs([scene]))
+                        scene_objs.merge(self.usgs([scene]))
 
-            return files
+            return scene_objs
 
         else:
             raise Exception('Expected sceneIDs list')
@@ -67,7 +77,7 @@ class Landsat8(object):
         if not isinstance(scenes, list):
             raise Exception('Expected sceneIDs list')
 
-        files = []
+        scene_objs = Scenes()
 
         # download from usgs if login information is provided
         if self.usgs_user and self.usgs_pass:
@@ -78,16 +88,18 @@ class Landsat8(object):
                 error_text = error_tree.find("SOAP-ENV:Body/SOAP-ENV:Fault/faultstring", api.NAMESPACES).text
                 raise USGSInventoryAccessMissing(error_text)
 
-            download_urls = api.download('LANDSAT_8', 'EE', scenes, api_key=api_key)
-            if download_urls:
-                logger.info('Source: USGS EarthExplorer')
-                for url in download_urls:
-                    files.append(fetch(url, self.download_dir))
+            for scene in scenes:
+                download_urls = api.download('LANDSAT_8', 'EE', [scene], api_key=api_key)
+                if download_urls:
+                    logger.info('Source: USGS EarthExplorer')
+                    scene_objs.add_with_files(scene, fetch(download_urls[0], self.download_dir))
 
-                return files
-            else:
-                raise RemoteFileDoesntExist('{0} not available on AWS S3, Google or USGS Earth Explorer'.format(
-                                            ' - '.join(scenes)))
+                else:
+                    raise RemoteFileDoesntExist('{0} not available on AWS S3, Google or USGS Earth Explorer'.format(
+                                                ' - '.join(scene)))
+
+            return scene_objs
+
         raise RemoteFileDoesntExist('{0} not available on AWS S3 or Google Storage'.format(' - '.join(scenes)))
 
     def google(self, scenes):
@@ -108,53 +120,14 @@ class Landsat8(object):
         if not isinstance(scenes, list):
             raise Exception('Expected sceneIDs list')
 
-        files = []
+        scene_objs = Scenes()
         logger.info('Source: Google Storge')
 
         for scene in scenes:
-
             sat = landsat_scene_interpreter(scene)
             url = google_storage_url_landsat8(sat)
             remote_file_exists(url)
 
-            files.append(fetch(url, self.download_dir))
+            scene_objs.add_with_files(scene, fetch(url, self.download_dir))
 
-        return files
-
-    def s3(self, scenes, bands):
-        """
-        Amazon S3 downloader
-        """
-        if not isinstance(scenes, list):
-            raise Exception('Expected sceneIDs list')
-
-        folders = []
-
-        logger.info('Source: AWS S3')
-        for scene in scenes:
-            sat = landsat_scene_interpreter(scene)
-
-            # Always grab MTL.txt and QA band if bands are specified
-            if 'BQA' not in bands:
-                bands.append('QA')
-
-            if 'MTL' not in bands:
-                bands.append('MTL')
-
-            urls = []
-
-            for band in bands:
-                # get url for the band
-                url = amazon_s3_url_landsat8(sat, band)
-
-                # make sure it exist
-                remote_file_exists(url)
-                urls.append(url)
-
-            # create folder
-            folders.append(check_create_folder(join(self.download_dir, scene)))
-
-            for url in urls:
-                fetch(url, self.download_dir)
-
-        return folders
+        return scene_objs

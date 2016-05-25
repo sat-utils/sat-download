@@ -1,17 +1,18 @@
 import logging
-from os.path import join
 
-from .common import (sentinel_scene_interpreter, amazon_s3_url_sentinel2, remote_file_exists,
-                     check_create_folder, fetch)
+from .download import S3DownloadMixin
+from .common import sentinel_scene_interpreter, amazon_s3_url_sentinel2, check_create_folder
 
 logger = logging.getLogger('sdownloader')
 
 
-class Sentinel2(object):
+class Sentinel2(S3DownloadMixin):
     """ Sentinel2 downloader class """
 
     def __init__(self, download_dir):
         self.download_dir = download_dir
+        self.scene_interpreter = sentinel_scene_interpreter
+        self.amazon_s3_url = amazon_s3_url_sentinel2
 
         # Make sure download directory exist
         check_create_folder(self.download_dir)
@@ -38,37 +39,3 @@ class Sentinel2(object):
             return self.s3(scenes, bands)
         else:
             raise Exception('Expected scene list')
-
-    def s3(self, scenes, bands):
-        """
-        Amazon S3 downloader
-        """
-        if not isinstance(scenes, list):
-            raise Exception('Expected scene list')
-
-        folders = []
-
-        logger.info('Source: AWS S3')
-        for scene in scenes:
-            path = sentinel_scene_interpreter(scene)
-
-            urls = []
-
-            for band in bands:
-                # get url for the band
-                url = amazon_s3_url_sentinel2(path, band)
-
-                # make sure it exist
-                remote_file_exists(url)
-                urls.append(url)
-
-            if '/' in scene:
-                scene = scene.replace('/', '_')
-
-            # create folder
-            folders.append(check_create_folder(join(self.download_dir, scene)))
-
-            for url in urls:
-                fetch(url, self.download_dir)
-
-        return folders
