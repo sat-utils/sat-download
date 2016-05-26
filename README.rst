@@ -49,3 +49,7 @@ Example
      100%      7.7 KiB       7.7 KiB/s            0:00:00 ETA
   [['/var/folders/m1/66c70kws2_1g9y34b2pgccsm0000gn/T/tmpaKA6Gq/LC80010092015051LGN00'], ['/var/folders/m1/66c70kws2_1g9y34b2pgccsm0000gn/T/tmpaKA6Gq/LC82050312015136LGN00']]
 
+
+About
+=====
+Sat Download was made by `Development Seed <http://developmentseed.org>`_.
