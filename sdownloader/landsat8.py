@@ -15,6 +15,19 @@ logger = logging.getLogger('sdownloader')
 class Landsat8(S3DownloadMixin):
     """ Landsat8 downloader class """
 
+    _bandmap = {
+        'coastal': 1,
+        'blue': 2,
+        'green': 3,
+        'red': 4,
+        'nir': 5,
+        'swir1': 6,
+        'swir2': 7,
+        'pan': 8,
+        'cirrus': 9,
+        'quality': 'BQA'
+    }
+
     def __init__(self, download_dir, usgs_user=None, usgs_pass=None):
         self.download_dir = download_dir
         self.usgs_user = usgs_user
@@ -24,6 +37,15 @@ class Landsat8(S3DownloadMixin):
 
         # Make sure download directory exist
         check_create_folder(self.download_dir)
+
+    def _band_converter(self, bands=None):
+        if bands:
+            for i, b in enumerate(bands):
+                try:
+                    bands[i] = self._bandmap[b]
+                except KeyError:
+                    pass
+        return bands
 
     def download(self, scenes, bands=None):
         """
@@ -39,6 +61,8 @@ class Landsat8(S3DownloadMixin):
         :returns:
             (List) includes downloaded scenes as key and source as value (aws or google)
         """
+
+        bands = self._band_converter(bands)
 
         if isinstance(scenes, list):
             scene_objs = Scenes()

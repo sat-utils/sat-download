@@ -39,6 +39,19 @@ class Tests(unittest.TestCase):
         self.assertEqual(self.s3_scenes, results.scenes)
         self.assertEqual(len(results[self.s3_scenes[0]].files), 3)
 
+    @mock.patch('sdownloader.download.fetch')
+    def test_download_with_band_name(self, fake_fetch):
+        """ Test downloading from S3 for a given sceneID with band names """
+
+        fake_fetch.return_value = 'file.tif'
+
+        l = Landsat8(download_dir=self.temp_folder)
+        results = l.download(self.s3_scenes, ['red', 'green', 'blue'])
+
+        self.assertTrue(isinstance(results, Scenes))
+        self.assertEqual(self.s3_scenes, results.scenes)
+        self.assertEqual(len(results[self.s3_scenes[0]].files), 5)
+
     @mock.patch('sdownloader.common.download')
     def test_google(self, fake_fetch):
         """ Test downloading from google for a given sceneID """

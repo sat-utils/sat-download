@@ -39,6 +39,19 @@ class Tests(unittest.TestCase):
         self.assertEqual(total, len(self.scenes) * 3)
 
     @mock.patch('sdownloader.download.fetch')
+    def test_download_with_band_name(self, fake_fetch):
+        """ Test downloading from S3 for a given sceneID with band names """
+
+        fake_fetch.return_value = 'file.tif'
+
+        l = Sentinel2(download_dir=self.temp_folder)
+        results = l.download(self.scenes, ['red', 'green', 'blue'])
+
+        self.assertTrue(isinstance(results, Scenes))
+        self.assertEqual(self.scenes, results.scenes)
+        self.assertEqual(len(results[self.scenes[0]].files), 3)
+
+    @mock.patch('sdownloader.download.fetch')
     def test_download_path(self, fake_fetch):
         """ Test downloading from S3 for a given sceneID """
 

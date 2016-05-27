@@ -9,6 +9,16 @@ logger = logging.getLogger('sdownloader')
 class Sentinel2(S3DownloadMixin):
     """ Sentinel2 downloader class """
 
+    _bandmap = {
+        'coastal': 1,
+        'blue': 2,
+        'green': 3,
+        'red': 4,
+        'nir': 8,
+        'swir1': 11,
+        'swir2': 12
+    }
+
     def __init__(self, download_dir):
         self.download_dir = download_dir
         self.scene_interpreter = sentinel_scene_interpreter
@@ -16,6 +26,15 @@ class Sentinel2(S3DownloadMixin):
 
         # Make sure download directory exist
         check_create_folder(self.download_dir)
+
+    def _band_converter(self, bands=None):
+        if bands:
+            for i, b in enumerate(bands):
+                try:
+                    bands[i] = self._bandmap[b]
+                except KeyError:
+                    pass
+        return bands
 
     def download(self, scenes, bands):
         """
@@ -34,6 +53,7 @@ class Sentinel2(S3DownloadMixin):
         :returns:
             (List) includes downloaded scenes as key and source as value (aws or google)
         """
+        bands = self._band_converter(bands)
 
         if isinstance(scenes, list):
             return self.s3(scenes, bands)
