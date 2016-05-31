@@ -24,7 +24,7 @@ setup(
     long_description=long_description,
     url='https://github.com/sat-utils/downloader',
     download_url='https://github.com/sat-utils/downloader/tarball/' + __version__,
-    license='CC0',
+    license='MIT',
     classifiers=[
         'Framework :: Pytest',
         'Topic :: Scientific/Engineering :: GIS',
