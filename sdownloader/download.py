@@ -1,4 +1,5 @@
 import os
+import glob
 import logging
 import tarfile
 import subprocess
@@ -32,7 +33,10 @@ class Scene(object):
             self.band_files.append(f)
         self.files.append(f)
 
-    def unzip(self, path):
+    def unzip(self, path=None):
+
+        if not path:
+            path = os.path.join(os.path.split(self.zip_file)[0], self.name)
 
         if not self.zipped:
             raise Exception('Scene does not have a zip file associated with it')
@@ -43,6 +47,14 @@ class Scene(object):
                 tar.close()
             except tarfile.ReadError:
                 subprocess.check_call(['tar', '-xf', self.zip_file, '-C', path])
+
+            formats = ['*.tif', '*.TIF', '*.jp2']
+
+            for f in formats:
+                for image in glob.glob(os.path.join(path, f)):
+                    self.add(image)
+
+            self.zipped = False
 
     def __str__(self):
         return self.name
@@ -101,6 +113,10 @@ class Scenes(object):
     @property
     def scenes(self):
         return [s.name for s in self]
+
+    def unzip(self):
+        for i, scene in enumerate(self):
+            scene.unzip()
 
 
 class S3DownloadMixin(object):
