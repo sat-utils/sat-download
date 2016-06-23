@@ -1,4 +1,3 @@
-import os
 import errno
 import shutil
 import unittest
@@ -6,6 +5,8 @@ from tempfile import mkdtemp
 
 import mock
 
+from sdownloader.download import Scenes
+from sdownloader.common import sentinel_scene_interpreter
 from sdownloader.sentinel2 import Sentinel2
 
 
@@ -24,30 +25,52 @@ class Tests(unittest.TestCase):
             if exc.errno != errno.ENOENT:
                 raise
 
-    @mock.patch('sdownloader.sentinel2.fetch')
+    @mock.patch('sdownloader.download.fetch')
     def test_download_scene_name(self, fake_fetch):
         """ Test downloading from S3 for a given sceneID """
 
-        fake_fetch.return_value = True
+        fake_fetch.return_value = 'file.tif'
 
         l = Sentinel2(download_dir=self.temp_folder)
         results = l.s3(self.scenes, [4, 3, 2])
 
-        assert isinstance(results, list)
-        assert len(results) == len(self.scenes)
-        for i, scene in enumerate(self.scenes):
-            self.assertEqual(results[i], os.path.join(self.temp_folder, scene))
+        self.assertTrue(isinstance(results, Scenes))
 
-    @mock.patch('sdownloader.sentinel2.fetch')
+        total = sum([len(s.files) for s in results])
+        self.assertEqual(total, len(self.scenes) * 3)
+
+    def test_sentinel_scene_interpreter(self):
+        expected = 'tiles/56/W/NV/2016/5/30/0'
+
+        scene = 'S2A_tile_20160530_56WNV_0'
+        self.assertEqual(sentinel_scene_interpreter(scene), expected)
+
+        scene = 'S2A_OPER_MSI_L1C_TL_SGS__20160530T030406_A004890_T56WNV_N01.01'
+        self.assertEqual(sentinel_scene_interpreter(scene), expected)
+
+    @mock.patch('sdownloader.download.fetch')
+    def test_download_with_band_name(self, fake_fetch):
+        """ Test downloading from S3 for a given sceneID with band names """
+
+        fake_fetch.return_value = 'file.tif'
+
+        l = Sentinel2(download_dir=self.temp_folder)
+        results = l.download(self.scenes, ['red', 'green', 'blue'])
+
+        self.assertTrue(isinstance(results, Scenes))
+        self.assertEqual(self.scenes, results.scenes)
+        self.assertEqual(len(results[self.scenes[0]].files), 3)
+
+    @mock.patch('sdownloader.download.fetch')
     def test_download_path(self, fake_fetch):
         """ Test downloading from S3 for a given sceneID """
 
-        fake_fetch.return_value = True
+        fake_fetch.return_value = 'file.tif'
 
         l = Sentinel2(download_dir=self.temp_folder)
         results = l.s3(self.paths, [4, 3, 2])
 
-        assert isinstance(results, list)
-        assert len(results) == len(self.paths)
-        for i, scene in enumerate(self.paths):
-            self.assertEqual(results[i], os.path.join(self.temp_folder, scene.replace('/', '_')))
+        self.assertTrue(isinstance(results, Scenes))
+
+        total = sum([len(s.files) for s in results])
+        self.assertEqual(total, len(self.paths) * 3)

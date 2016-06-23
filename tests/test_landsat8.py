@@ -6,6 +6,7 @@ from tempfile import mkdtemp
 
 import mock
 
+from sdownloader.download import Scenes
 from sdownloader.landsat8 import Landsat8
 
 
@@ -25,19 +26,31 @@ class Tests(unittest.TestCase):
             if exc.errno != errno.ENOENT:
                 raise
 
-    @mock.patch('sdownloader.landsat8.fetch')
+    @mock.patch('sdownloader.download.fetch')
     def test_s3(self, fake_fetch):
         """ Test downloading from S3 for a given sceneID """
 
-        fake_fetch.return_value = True
+        fake_fetch.return_value = 'file.tif'
 
         l = Landsat8(download_dir=self.temp_folder)
         results = l.s3(self.s3_scenes, [4, 3, 2])
 
-        assert isinstance(results, list)
-        assert len(results) == len(self.s3_scenes)
-        for i, scene in enumerate(self.s3_scenes):
-            self.assertEqual(results[i], os.path.join(self.temp_folder, scene))
+        self.assertTrue(isinstance(results, Scenes))
+        self.assertEqual(self.s3_scenes, results.scenes)
+        self.assertEqual(len(results[self.s3_scenes[0]].files), 3)
+
+    @mock.patch('sdownloader.download.fetch')
+    def test_download_with_band_name(self, fake_fetch):
+        """ Test downloading from S3 for a given sceneID with band names """
+
+        fake_fetch.return_value = 'file.tif'
+
+        l = Landsat8(download_dir=self.temp_folder)
+        results = l.download(self.s3_scenes, ['red', 'green', 'blue'])
+
+        self.assertTrue(isinstance(results, Scenes))
+        self.assertEqual(self.s3_scenes, results.scenes)
+        self.assertEqual(len(results[self.s3_scenes[0]].files), 5)
 
     @mock.patch('sdownloader.common.download')
     def test_google(self, fake_fetch):
@@ -48,10 +61,10 @@ class Tests(unittest.TestCase):
         l = Landsat8(download_dir=self.temp_folder)
         results = l.google(self.all_scenes)
 
-        assert isinstance(results, list)
-        assert len(results) == len(self.all_scenes)
+        self.assertTrue(isinstance(results, Scenes))
+        self.assertEqual(len(results), len(self.all_scenes))
         for i, scene in enumerate(self.all_scenes):
-            self.assertEqual(results[i], os.path.join(self.temp_folder, scene + '.tar.bz'))
+            self.assertEqual(results[scene].zip_file, os.path.join(self.temp_folder, scene + '.tar.bz'))
 
     @mock.patch('sdownloader.landsat8.api.login')
     @mock.patch('sdownloader.landsat8.api.download')
@@ -60,22 +73,21 @@ class Tests(unittest.TestCase):
         """ Test downloading from google for a given sceneID """
 
         fake_login.return_value = True
-        fake_fetch.return_value = True
+        fake_fetch.return_value = 'file.tar.bz'
         fake_api.return_value = ['example.com/%s.tar.bz' % scene for scene in self.all_scenes]
 
         l = Landsat8(download_dir=self.temp_folder, usgs_user='test', usgs_pass='test')
         results = l.usgs(self.all_scenes)
 
-        assert isinstance(results, list)
-        assert len(results) == len(self.all_scenes)
-        for i, scene in enumerate(self.all_scenes):
-            self.assertEqual(results[i], os.path.join(self.temp_folder, scene + '.tar.bz'))
+        self.assertTrue(isinstance(results, Scenes))
+        self.assertEqual(len(results), len(self.all_scenes))
+        self.assertEqual(results[0].zip_file, os.path.join(self.temp_folder, self.all_scenes[0] + '.tar.bz'))
 
     @mock.patch('sdownloader.landsat8.Landsat8.google')
     def test_download_google_when_amazon_is_unavailable(self, fake_google):
         """ Test whether google or amazon are correctly selected based on input """
 
-        fake_google.return_value = []
+        fake_google.return_value = Scenes()
 
         # Test if google is used when an image from 2014 is passed even if bands are provided
         scenes = [self.all_scenes[-1]]

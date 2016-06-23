@@ -28,13 +28,22 @@ def sentinel_scene_interpreter(scene_name):
             return scene_name
 
         splitted = scene_name.split('_')
-        version = int(splitted[-1].split('.')[-1]) - 1
-        date = datetime.datetime.strptime(splitted[-4], '%Y%m%dT%H%M%S')
 
-        mgrs = splitted[-2]
-        utm = int(mgrs[1:3])
-        latitude_band = mgrs[3]
-        grid_square = mgrs[4:6]
+        if len(splitted) > 5:
+            version = int(splitted[-1].split('.')[-1]) - 1
+            date = datetime.datetime.strptime(splitted[-4], '%Y%m%dT%H%M%S')
+
+            mgrs = splitted[-2]
+            utm = int(mgrs[1:3])
+            latitude_band = mgrs[3]
+            grid_square = mgrs[4:6]
+        else:
+            version = int(splitted[-1])
+            date = datetime.datetime.strptime(splitted[2], '%Y%m%d')
+            mgrs = splitted[3]
+            utm = int(mgrs[0:2])
+            latitude_band = mgrs[2]
+            grid_square = mgrs[3:5]
 
         return 'tiles/{0}/{1}/{2}/{3}/{4}/{5}/{6}'.format(
             utm,
