@@ -111,8 +111,14 @@ class Tests(unittest.TestCase):
         expect = 'tiles/34/R/CS/2016/3/25/0'
         self.assertEqual(output, expect)
 
-        scene = 'tiles/34/R/CS/2016/3/25/0'
+        scene = 'S2A_OPER_MSI_L1C_TL_SGS__20160325T150955_A003951_T34RCS_N02.01'
         output = common.sentinel_scene_interpreter(scene)
+        expect = 'tiles/34/R/CS/2016/3/25/0'
+        self.assertEqual(output, expect)
+
+        scene = 'S2A_tile_20160526_1VCH_0'
+        output = common.sentinel_scene_interpreter(scene)
+        expect = 'tiles/1/V/CH/2016/5/26/0'
         self.assertEqual(output, expect)
 
     def test_sentinel_scene_interpreter_fail(self):

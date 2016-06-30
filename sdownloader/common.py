@@ -40,10 +40,15 @@ def sentinel_scene_interpreter(scene_name):
         else:
             version = int(splitted[-1])
             date = datetime.datetime.strptime(splitted[2], '%Y%m%d')
-            mgrs = splitted[3]
-            utm = int(mgrs[0:2])
-            latitude_band = mgrs[2]
-            grid_square = mgrs[3:5]
+            pattern = re.compile('(\d+)([A-Z])([A-Z]{2})')
+            mgrs = pattern.match(splitted[3])
+
+            if mgrs:
+                utm = int(mgrs.group(1))
+                latitude_band = mgrs.group(2)
+                grid_square = mgrs.group(3)
+            else:
+                raise IncorrectSentine2SceneId('Incorrect Scene for Sentinel-2 provided')
 
         return 'tiles/{0}/{1}/{2}/{3}/{4}/{5}/{6}'.format(
             utm,
